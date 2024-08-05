@@ -7,12 +7,31 @@ import pandas as pd
 
 def main():
     # Load and preprocess data
-    data = load_data('data/reviews.csv')
+    data = load_data('data/cleaned_feedback_data.csv')
     preprocessed_data = preprocess_data(data)
+
+    # Print column names to verify
+    print("Columns in preprocessed data:", preprocessed_data.columns)
+
+    # Rename columns if necessary to match script expectations
+    preprocessed_data.rename(columns={
+        'Clothing ID': 'Clothing_ID',
+        'Review Text': 'Review_Text',
+        'Division Name': 'Division_Name',
+        'Department Name': 'Department_Name',
+        'Class Name': 'Class_Name'
+    }, inplace=True)
+
+    # Drop the 'Review_Text' column
+    if 'Review_Text' in preprocessed_data.columns:
+        preprocessed_data = preprocessed_data.drop(columns=['Review_Text'])
+        print("Dropped 'Review_Text' column.")
+    else:
+        print("'Review_Text' column not found.")
 
     # Check for duplicates in the columns that are supposed to be unique
     duplicate_entries = preprocessed_data[preprocessed_data.duplicated(
-        subset=['Age', 'Clothing ID'], keep=False)]
+        subset=['Age', 'Clothing_ID'], keep=False)]
 
     if not duplicate_entries.empty:
         print("Duplicate entries found:")
@@ -20,31 +39,59 @@ def main():
 
     # Remove duplicates
     preprocessed_data = preprocessed_data.drop_duplicates(
-        subset=['Age', 'Clothing ID'])
+        subset=['Age', 'Clothing_ID'])
+
+    # Convert columns to strings where necessary and handle errors
+    for column in ['Title', 'Division_Name', 'Department_Name', 'Class_Name']:
+        if column in preprocessed_data.columns:
+            preprocessed_data[column] = preprocessed_data[column].astype(str)
+
+    # Remove rows that cause errors during processing
+    clean_data = pd.DataFrame(columns=preprocessed_data.columns)
+
+    for index, row in preprocessed_data.iterrows():
+        try:
+            # Example of processing that could fail
+            row['Title'].lower()
+
+            # Append valid rows to clean_data using pd.concat
+            clean_data = pd.concat([clean_data, pd.DataFrame(
+                [row], columns=clean_data.columns)], ignore_index=True)
+        except Exception as e:
+            print(f"Error processing row {index}: {e}")
+
+    if clean_data.empty:
+        print("No valid data to process.")
+        return
+
+    # Print processed data columns
+    print("Processed data columns:", clean_data.columns)
+
+    # Load item descriptions
+    item_descriptions = load_data('data/item_descriptions.csv')
+    item_descriptions = preprocess_data(item_descriptions)
 
     # Pivot data to create user-item matrix
-    user_item_matrix = preprocessed_data.pivot(
-        index='Age', columns='Clothing ID', values='Rating')
+    if 'Age' in clean_data.columns and 'Clothing_ID' in clean_data.columns and 'Rating' in clean_data.columns:
+        user_item_matrix = clean_data.pivot(
+            index='Age', columns='Clothing_ID', values='Rating')
 
-    # Handle missing values (NaNs)
-    # Option 1: Fill NaNs with a default value (e.g., 0)
-    user_item_matrix = user_item_matrix.fillna(0)
+        # Handle missing values (NaNs)
+        user_item_matrix = user_item_matrix.fillna(0)
 
-    # Option 2: Drop rows or columns with NaNs (less recommended if it results in significant data loss)
-    # user_item_matrix = user_item_matrix.dropna(axis=0)  # Drop rows with NaNs
-    # user_item_matrix = user_item_matrix.dropna(axis=1)  # Drop columns with NaNs
+        # Initialize and train model
+        model = HybridModel()
+        model.train(user_item_matrix, item_descriptions)
 
-    # Initialize and train model
-    item_descriptions = preprocessed_data['Review Text']
-    model = HybridModel()
-    model.train(user_item_matrix, item_descriptions)
+        # Save model
+        model.save('recommendation_model.pkl')
 
-    # Save model
-    model.save('recommendation_model.pkl')
+    else:
+        print("Required columns are missing from the cleaned data.")
 
     # Evaluate feedback and update model
-    evaluate_feedback('data/feedback_data.csv')
-    update_model('data/feedback_data.csv')
+    evaluate_feedback('data/cleaned_feedback_data.csv')
+    update_model('data/cleaned_feedback_data.csv')
 
 
 if __name__ == "__main__":

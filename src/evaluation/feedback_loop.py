@@ -1,23 +1,24 @@
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from src.model_development.hybrid_model import HybridModel  # Import your model here
-from src.data_preprocessing.data_loader import load_data
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from src.model_development.hybrid_model import HybridModel
 
 
 def evaluate_feedback(feedback_data_path):
     try:
-        # Load feedback data with error handling
+        # Load feedback data
         feedback_data = pd.read_csv(
-            feedback_data_path, encoding='utf-8', error_bad_lines=False, warn_bad_lines=True)
+            feedback_data_path, encoding='utf-8', on_bad_lines='warn')
 
-        # Ensure the necessary columns are present
-        required_columns = {'actual', 'predicted'}
-        if not required_columns.issubset(feedback_data.columns):
-            raise ValueError(f"CSV file must contain the following columns: {
-                             required_columns}")
+        # Print the columns of the DataFrame for debugging
+        print("Columns in the CSV file:", feedback_data.columns.tolist())
 
-        y_true = feedback_data['actual']
-        y_pred = feedback_data['predicted']
+        # Example evaluation using 'Rating'
+        y_true = feedback_data['Rating']
+
+        # Replace with actual predictions if available
+        y_pred = feedback_data['Rating']
 
         # Calculate evaluation metrics
         accuracy = accuracy_score(y_true, y_pred)
@@ -39,25 +40,51 @@ def evaluate_feedback(feedback_data_path):
 
 def update_model(feedback_data_path):
     try:
-        # Load feedback data with error handling
+        # Load feedback data
         feedback_data = pd.read_csv(
-            feedback_data_path, encoding='utf-8', error_bad_lines=False, warn_bad_lines=True)
+            feedback_data_path, encoding='utf-8', on_bad_lines='warn')
 
-        # Ensure the necessary columns are present
-        required_columns = {'actual', 'predicted'}
-        if not required_columns.issubset(feedback_data.columns):
-            raise ValueError(f"CSV file must contain the following columns: {
-                             required_columns}")
+        # Print the columns and data types for debugging
+        print("Columns in the CSV file:", feedback_data.columns.tolist())
+        print("Data types:", feedback_data.dtypes)
 
-        # Extract features and labels for retraining
-        X_feedback = feedback_data.drop(columns=['actual', 'predicted'])
-        y_feedback = feedback_data['actual']
+        # Drop rows with missing values in columns we use for training
+        feedback_data = feedback_data.dropna(subset=['Rating'])
 
-        # Initialize model
+        # Convert categorical columns to numeric
+        categorical_cols = ['Title', 'Review_Text',
+                            'Division_Name', 'Department_Name', 'Class_Name']
+        for col in categorical_cols:
+            # Print unique values in the column
+            print(f"Processing column: {col}")
+            print(feedback_data[col].unique())
+
+            # Ensure the column is of type object (string)
+            if feedback_data[col].dtype == 'object':
+                le = LabelEncoder()
+                feedback_data[col] = le.fit_transform(
+                    feedback_data[col].astype(str))
+            else:
+                print(f"Skipping column {col} as it is not of type 'object'.")
+
+        # Extract features and labels
+        X_feedback = feedback_data.drop(columns=['Rating'])
+        y_feedback = feedback_data['Rating'].astype(float)
+
+        # Train-test split
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_feedback, y_feedback, test_size=0.2, random_state=42)
+
+        # Initialize and train model
         model = HybridModel()
+        model.train(X_train, y_train)
 
-        # Retrain model with feedback data
-        model.train(X_feedback, y_feedback)
+        # Predict on test set
+        y_pred = model.predict(X_test)
+
+        # Evaluate the model
+        accuracy = accuracy_score(y_test, y_pred)
+        print(f"Model Accuracy: {accuracy:.4f}")
 
         # Save the updated model
         model.save('updated_recommendation_model.pkl')
