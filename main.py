@@ -1,4 +1,3 @@
-# main.py
 from src.data_preprocessing.data_loader import load_data, preprocess_data
 from src.model_development.hybrid_model import HybridModel
 from src.evaluation.feedback_loop import evaluate_feedback, update_model
@@ -21,13 +20,6 @@ def main():
         'Department Name': 'Department_Name',
         'Class Name': 'Class_Name'
     }, inplace=True)
-
-    # Drop the 'Review_Text' column
-    if 'Review_Text' in preprocessed_data.columns:
-        preprocessed_data = preprocessed_data.drop(columns=['Review_Text'])
-        print("Dropped 'Review_Text' column.")
-    else:
-        print("'Review_Text' column not found.")
 
     # Check for duplicates in the columns that are supposed to be unique
     duplicate_entries = preprocessed_data[preprocessed_data.duplicated(
@@ -67,10 +59,6 @@ def main():
     # Print processed data columns
     print("Processed data columns:", clean_data.columns)
 
-    # Load item descriptions
-    item_descriptions = load_data('data/item_descriptions.csv')
-    item_descriptions = preprocess_data(item_descriptions)
-
     # Pivot data to create user-item matrix
     if 'Age' in clean_data.columns and 'Clothing_ID' in clean_data.columns and 'Rating' in clean_data.columns:
         user_item_matrix = clean_data.pivot(
@@ -78,6 +66,10 @@ def main():
 
         # Handle missing values (NaNs)
         user_item_matrix = user_item_matrix.fillna(0)
+
+        # Generate item descriptions from clean_data
+        item_descriptions = clean_data[[
+            'Clothing_ID', 'Title', 'Division_Name', 'Department_Name', 'Class_Name']].drop_duplicates()
 
         # Initialize and train model
         model = HybridModel()
