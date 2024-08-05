@@ -1,12 +1,8 @@
+# text_preprocessor.py
 from sklearn.feature_extraction.text import TfidfVectorizer
-import re
 
 
-def preprocess_text(text):
-    text = re.sub(r'\W', ' ', text)  # Remove punctuation
-    text = text.lower()  # Lowercase
-    return text
-
-def vectorize_text(text_series):
+def preprocess_text(text_data):
     vectorizer = TfidfVectorizer(stop_words='english')
-    return vectorizer.fit_transform(text_series)
+    tfidf_matrix = vectorizer.fit_transform(text_data)
+    return tfidf_matrix
