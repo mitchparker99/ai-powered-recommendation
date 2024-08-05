@@ -1,7 +1,8 @@
-import numpy as np
+# feature_engineering.py
+import pandas as pd
 
 
-def create_features(df):
-    df['user_product_interaction'] = df.groupby(
-        'Clothing ID')['Rating'].transform('mean')
-    return df
+def generate_features(data):
+    # Example feature engineering
+    data['text_length'] = data['Review Text'].apply(lambda x: len(x))
+    return data
