@@ -1,8 +1,7 @@
-# Implement caching strategies for frequently accessed data.
+# helpers.py
+import numpy as np
 
-import redis
 
-
-def cache_recommendations(user_id, recommendations):
-    cache = redis.StrictRedis(host='localhost', port=6379, db=0)
-    cache.set(user_id, recommendations)
+def transform_data(data):
+    # Example transformation
+    return np.log1p(data)
