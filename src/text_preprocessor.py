@@ -7,3 +7,6 @@ def preprocess_text(text):
     text = text.lower()  # Lowercase
     return text
 
+def vectorize_text(text_series):
+    vectorizer = TfidfVectorizer(stop_words='english')
+    return vectorizer.fit_transform(text_series)
