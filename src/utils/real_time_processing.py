@@ -14,6 +14,4 @@ def consume_real_time_data():
 def process_message(message):
     # Process real-time data here
     # Example: Parse message and update recommendation engine
-    pass
-    
-    ## or -> print(message.value)  # Example placeholder for processing logic
+    print(message.value)  # Example placeholder for processing logic
