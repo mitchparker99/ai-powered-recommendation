@@ -1,15 +1,19 @@
-import torch
-from torch_geometric.nn import GCNConv
+# graph_based_model.py
+import networkx as nx
+import pandas as pd
 
 
-class GraphBasedModel(torch.nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(GraphBasedModel, self).__init__()
-        self.conv1 = GCNConv(in_channels, 64)
-        self.conv2 = GCNConv(64, out_channels)
+class GraphBasedModel:
+    def __init__(self):
+        self.graph = nx.Graph()
 
-    def forward(self, x, edge_index):
-        x = self.conv1(x, edge_index)
-        x = torch.relu(x)
-        x = self.conv2(x, edge_index)
-        return x
+    def fit(self, edges_df):
+        self.graph.add_edges_from(edges_df.values)
+
+    def recommend(self, node, top_n=10):
+        neighbors = list(self.graph.neighbors(node))
+        return neighbors[:top_n]
+
+
+def load_edges(file_path):
+    return pd.read_csv(file_path)
