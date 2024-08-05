@@ -1,6 +1,6 @@
 # hybrid_model.py
 from src.collaborative_filtering import CollaborativeFilteringModel
-from src.content_based_filtering import ContentBasedFilteringModel
+from src.model_development.content_based_filtering import ContentBasedFilteringModel
 
 
 class HybridModel:
